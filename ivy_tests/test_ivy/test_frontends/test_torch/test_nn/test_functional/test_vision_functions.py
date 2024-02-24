@@ -78,12 +78,14 @@ def _pad_generator(draw, shape, mode):
 @st.composite
 def _pad_helper(draw):
     mode = draw(
-        st.sampled_from([
-            "constant",
-            "reflect",
-            "replicate",
-            "circular",
-        ])
+        st.sampled_from(
+            [
+                "constant",
+                "reflect",
+                "replicate",
+                "circular",
+            ]
+        )
     )
     min_v = 1
     max_v = 5
@@ -104,7 +106,7 @@ def _pad_helper(draw):
     )
     padding = draw(_pad_generator(shape, mode))
     if mode == "constant":
-        value = draw(helpers.ints(min_value=0, max_value=4))
+        value = draw(helpers.ints(min_value=0, max_value=4) | st.none())
     else:
         value = 0.0
     return dtype, input[0], padding, value, mode

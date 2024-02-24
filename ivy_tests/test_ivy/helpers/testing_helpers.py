@@ -7,7 +7,7 @@ import inspect
 import functools
 from typing import List, Optional
 
-from hypothesis import given, strategies as st
+from hypothesis import given, strategies as st, example
 
 # local
 import ivy.functional.frontends.numpy as np_frontend
@@ -30,6 +30,7 @@ from ivy_tests.test_ivy.helpers.test_parameter_flags import (
     BuiltFrontendArrayStrategy,
     BuiltTranspileStrategy,
     BuiltPrecisionModeStrategy,
+    BuiltCythonWrapperStrategy,
 )
 from ivy_tests.test_ivy.helpers.structs import FrontendMethodData
 from ivy_tests.test_ivy.helpers.available_frameworks import available_frameworks
@@ -59,9 +60,8 @@ def _get_runtime_flag_value(flag):
 
 @st.composite
 def num_positional_args_method(draw, *, method):
-    """
-    Draws an integers randomly from the minimum and maximum number of positional
-    arguments a given method can take.
+    """Draws an integers randomly from the minimum and maximum number of
+    positional arguments a given method can take.
 
     Parameters
     ----------
@@ -91,9 +91,8 @@ def num_positional_args_method(draw, *, method):
 
 @st.composite
 def num_positional_args(draw, *, fn_name: Optional[str] = None):
-    """
-    Draws an integers randomly from the minimum and maximum number of positional
-    arguments a given function can take.
+    """Draws an integers randomly from the minimum and maximum number of
+    positional arguments a given function can take.
 
     Parameters
     ----------
@@ -158,8 +157,7 @@ def num_positional_args_helper(fn_name, backend):
 
 
 def _import_fn(fn_tree: str):
-    """
-    Import a function from function tree string.
+    """Import a function from function tree string.
 
     Parameters
     ----------
@@ -209,8 +207,7 @@ def _get_method_supported_devices_dtypes_helper(
 def _get_method_supported_devices_dtypes(
     method_name: str, class_module: str, class_name: str
 ):
-    """
-    Get supported devices and data types for a method in Ivy API.
+    """Get supported devices and data types for a method in Ivy API.
 
     Parameters
     ----------
@@ -278,8 +275,7 @@ def _get_supported_devices_dtypes_helper(
 
 
 def _get_supported_devices_dtypes(fn_name: str, fn_module: str):
-    """
-    Get supported devices and data types for a function in Ivy API.
+    """Get supported devices and data types for a function in Ivy API.
 
     Parameters
     ----------
@@ -344,10 +340,10 @@ def handle_test(
     as_variable_flags=BuiltAsVariableStrategy,
     native_array_flags=BuiltNativeArrayStrategy,
     container_flags=BuiltContainerStrategy,
+    test_cython_wrapper=BuiltCythonWrapperStrategy,
     **_given_kwargs,
 ):
-    """
-    Test wrapper for Ivy functions.
+    """Test wrapper for Ivy functions.
 
     The wrapper sets the required test globals and creates test flags strategies.
 
@@ -422,6 +418,7 @@ def handle_test(
             native_arrays=_get_runtime_flag_value(native_array_flags),
             container_flags=_get_runtime_flag_value(container_flags),
             precision_mode=_get_runtime_flag_value(precision_mode),
+            test_cython_wrapper=_get_runtime_flag_value(test_cython_wrapper),
         )
 
     def test_wrapper(test_fn):
@@ -489,8 +486,7 @@ def handle_frontend_test(
     precision_mode=BuiltPrecisionModeStrategy,
     **_given_kwargs,
 ):
-    """
-    Test wrapper for Ivy frontend functions.
+    """Test wrapper for Ivy frontend functions.
 
     The wrapper sets the required test globals and creates test flags strategies.
 
@@ -640,8 +636,7 @@ def handle_method(
     method_container_flags=BuiltContainerStrategy,
     **_given_kwargs,
 ):
-    """
-    Test wrapper for Ivy methods.
+    """Test wrapper for Ivy methods.
 
     The wrapper sets the required test globals and creates test flags strategies.
 
@@ -759,8 +754,7 @@ def handle_frontend_method(
     generate_frontend_arrays=BuiltFrontendArrayStrategy,
     **_given_kwargs,
 ):
-    """
-    Test wrapper for Ivy frontends methods.
+    """Test wrapper for Ivy frontends methods.
 
     The wrapper sets the required test globals and creates
     test flags strategies.
@@ -945,3 +939,114 @@ def _create_transpile_report(
     json_object = json.dumps(data, indent=6)
     with open(file_name, "w") as outfile:
         outfile.write(json_object)
+
+
+def handle_example(
+    *,
+    test_example: bool = False,
+    test_frontend_example: bool = False,
+    test_method_example: bool = False,
+    test_frontend_method_example: bool = False,
+    **given_kwargs,
+):
+    if test_example:
+        test_flags = given_kwargs.get("test_flags", {})
+        flags = pf.FunctionTestFlags(
+            ground_truth_backend=test_flags.get("ground_truth_backend", "numpy"),
+            num_positional_args=test_flags.get("num_positional_args", 0),
+            instance_method=test_flags.get("instance_method", False),
+            with_out=test_flags.get("with_out", False),
+            with_copy=test_flags.get("with_copy", False),
+            test_gradients=test_flags.get("test_gradients", False),
+            test_trace=test_flags.get("test_trace", False),
+            transpile=test_flags.get("transpile", False),
+            as_variable=test_flags.get("as_variable", [False]),
+            native_arrays=test_flags.get("native_arrays", [False]),
+            container=test_flags.get("container", [False]),
+            precision_mode=test_flags.get("precision_mode", False),
+            test_cython_wrapper=test_flags.get("test_cython_wrapper", False),
+        )
+
+        given_kwargs["test_flags"] = flags
+
+    elif test_frontend_example:
+        test_flags = given_kwargs.get("test_flags", {})
+        flags = pf.FrontendFunctionTestFlags(
+            num_positional_args=test_flags.get("num_positional_args", 0),
+            with_out=test_flags.get("with_out", False),
+            with_copy=test_flags.get("with_copy", False),
+            inplace=test_flags.get("inplace", False),
+            as_variable=test_flags.get("as_variable", [False]),
+            native_arrays=test_flags.get("native_arrays", [False]),
+            test_trace=test_flags.get("test_trace", False),
+            generate_frontend_arrays=test_flags.get("generate_frontend_arrays", False),
+            transpile=test_flags.get("transpile", False),
+            precision_mode=test_flags.get("precision_mode", False),
+        )
+
+        given_kwargs["test_flags"] = flags
+
+    elif test_method_example:
+        method_flags = given_kwargs.get("method_flags", {})
+        init_flags = given_kwargs.get("init_flags", {})
+        flags_1 = pf.MethodTestFlags(
+            num_positional_args=method_flags.get("num_positional_args", 0),
+            as_variable=method_flags.get("as_variable", [False]),
+            native_arrays=method_flags.get("native_arrays", [False]),
+            container_flags=method_flags.get("container", [False]),
+            precision_mode=method_flags.get("precision_mode", False),
+        )
+
+        flags_2 = pf.InitMethodTestFlags(
+            num_positional_args=init_flags.get("num_positional_args", 0),
+            as_variable=init_flags.get("as_variable", [False]),
+            native_arrays=init_flags.get("native_arrays", [False]),
+            precision_mode=init_flags.get("precision_mode", False),
+        )
+
+        given_kwargs["method_flags"] = flags_1
+        given_kwargs["init_flags"] = flags_2
+
+    elif test_frontend_method_example:
+        method_flags = given_kwargs.get("method_flags", {})
+        init_flags = given_kwargs.get("init_flags", {})
+        flags_1 = pf.FrontendMethodTestFlags(
+            num_positional_args=method_flags.get("num_positional_args", 0),
+            as_variable=method_flags.get("as_variable", [False]),
+            native_arrays=method_flags.get("native_arrays", [False]),
+            precision_mode=method_flags.get("precision_mode", False),
+            inplace=method_flags.get("inplace", False),
+            test_trace=method_flags.get("test_trace", False),
+            generate_frontend_arrays=method_flags.get(
+                "generate_frontend_arrays", False
+            ),
+        )
+
+        flags_2 = pf.FrontendInitTestFlags(
+            num_positional_args=init_flags.get("num_positional_args", 0),
+            as_variable=init_flags.get("as_variable", [False]),
+            native_arrays=init_flags.get("native_arrays", [False]),
+        )
+
+        given_kwargs["method_flags"] = flags_1
+        given_kwargs["init_flags"] = flags_2
+
+    def test_wrapper(test_fn):
+
+        hypothesis_test_fn = example(**given_kwargs)(test_fn)
+
+        @functools.wraps(hypothesis_test_fn)
+        def wrapped_test(*args, **kwargs):
+            try:
+                hypothesis_test_fn(*args, **kwargs)
+            except Exception as e:
+                # A string matching is used instead of actual exception due to
+                # exception object in with_backend is different from global Ivy
+                if e.__class__.__qualname__ == "IvyNotImplementedException":
+                    pytest.skip("Function not implemented in backend.")
+                else:
+                    raise e
+
+        return wrapped_test
+
+    return test_wrapper

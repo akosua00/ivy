@@ -174,9 +174,13 @@ def try_array_function_override(func, overloaded_args, types, args, kwargs):
 
 def _get_first_array(*args, **kwargs):
     # ToDo: make this more efficient, with function ivy.nested_nth_index_where
-    array_fn = lambda x: (
-        ivy.is_array(x) if not hasattr(x, "_ivy_array") else ivy.is_array(x.ivy_array)
-    )
+    def array_fn(x):
+        return (
+            ivy.is_array(x)
+            if not hasattr(x, "_ivy_array")
+            else ivy.is_array(x.ivy_array)
+        )
+
     array_fn = array_fn if "array_fn" not in kwargs else kwargs["array_fn"]
     arr = None
     if args:
@@ -223,8 +227,7 @@ _torch_non_native_view_functions = ("flip", "flipud", "rot90", "fliplr")
 
 
 def _check_in_nested_sequence(sequence, value=None, _type=None):
-    """
-    Check `sequence` for either a `value` or a value of type `_type`.
+    """Check `sequence` for either a `value` or a value of type `_type`.
 
     Helper to recursively check if a N-level nested `sequence` contains
     either a `value` or contains a value of type `_type` and return a
@@ -264,8 +267,7 @@ def _get_preferred_device(args, kwargs):
 
 
 def handle_array_function(fn):
-    """
-    Wrap a function `fn` to be passed to array_function method.
+    """Wrap a function `fn` to be passed to array_function method.
 
     Wrap a function to extract the relevant argument types to be passed
     to array_function method.
@@ -376,10 +378,9 @@ def handle_array_like_without_promotion(fn: Callable) -> Callable:
 def inputs_to_native_arrays(fn: Callable) -> Callable:
     @functools.wraps(fn)
     def _inputs_to_native_arrays(*args, **kwargs):
-        """
-        Convert all `ivy.Array` instances in both the positional and keyword arguments
-        into `ivy.NativeArray` instances, and then calls the function with the updated
-        arguments.
+        """Convert all `ivy.Array` instances in both the positional and keyword
+        arguments into `ivy.NativeArray` instances, and then calls the function
+        with the updated arguments.
 
         Parameters
         ----------
@@ -416,10 +417,9 @@ def inputs_to_native_arrays(fn: Callable) -> Callable:
 def inputs_to_ivy_arrays(fn: Callable) -> Callable:
     @functools.wraps(fn)
     def _inputs_to_ivy_arrays(*args, **kwargs):
-        """
-        Convert all `ivy.NativeArray` instances in both the positional and keyword
-        arguments into `ivy.Array` instances, and then calls the function with the
-        updated arguments.
+        """Convert all `ivy.NativeArray` instances in both the positional and
+        keyword arguments into `ivy.Array` instances, and then calls the
+        function with the updated arguments.
 
         Parameters
         ----------
@@ -483,8 +483,7 @@ def outputs_to_ivy_shapes(fn: Callable) -> Callable:
 
 
 def to_native_shapes_and_back(fn: Callable) -> Callable:
-    """
-    Make `fn` receive `ivy.NativeShape` and return `ivy.Shape`.
+    """Make `fn` receive `ivy.NativeShape` and return `ivy.Shape`.
 
     Wrap `fn` so that input shapes are all converted to
     `ivy.NativeShape` instances and return shapes are all converted to
@@ -496,9 +495,8 @@ def to_native_shapes_and_back(fn: Callable) -> Callable:
 def outputs_to_ivy_arrays(fn: Callable) -> Callable:
     @functools.wraps(fn)
     def _outputs_to_ivy_arrays(*args, **kwargs):
-        """
-        Call the function, and then converts all `ivy.NativeArray` instances in the
-        function return into `ivy.Array` instances.
+        """Call the function, and then converts all `ivy.NativeArray` instances
+        in the function return into `ivy.Array` instances.
 
         Parameters
         ----------
@@ -526,9 +524,8 @@ def outputs_to_ivy_arrays(fn: Callable) -> Callable:
 
 
 def output_to_native_arrays(fn: Callable) -> Callable:
-    """
-    Call the function, and then converts all `ivy.Array` instances in the function
-    return into `ivy.NativeArray` instances.
+    """Call the function, and then converts all `ivy.Array` instances in the
+    function return into `ivy.NativeArray` instances.
 
     Parameters
     ----------
@@ -553,8 +550,7 @@ def output_to_native_arrays(fn: Callable) -> Callable:
 
 
 def to_ivy_arrays_and_back(fn: Callable) -> Callable:
-    """
-    Make `fn` receive `ivy.Array` and return `ivy.NativeArray`.
+    """Make `fn` receive `ivy.Array` and return `ivy.NativeArray`.
 
     Wrap `fn` so that input arrays are all converted to `ivy.Array`
     instances and return arrays are all converted to `ivy.NativeArray`
@@ -564,8 +560,7 @@ def to_ivy_arrays_and_back(fn: Callable) -> Callable:
 
 
 def to_native_arrays_and_back(fn: Callable) -> Callable:
-    """
-    Make `fn` receive `ivy.NativeArray` and return `ivy.Array`.
+    """Make `fn` receive `ivy.NativeArray` and return `ivy.Array`.
 
     Wrap `fn` so that input arrays are all converted to
     `ivy.NativeArray` instances and return arrays are all converted to
@@ -575,8 +570,7 @@ def to_native_arrays_and_back(fn: Callable) -> Callable:
 
 
 def frontend_outputs_to_ivy_arrays(fn: Callable) -> Callable:
-    """
-    Wrap `fn` and convert all frontend arrays in its return to ivy arrays.
+    """Wrap `fn` and convert all frontend arrays in its return to ivy arrays.
 
     Used in cases when a frontend function receives a callable (frontend
     function) argument. To be able to use that callable in a composition
@@ -596,8 +590,7 @@ def frontend_outputs_to_ivy_arrays(fn: Callable) -> Callable:
 
 
 def handle_view(fn: Callable) -> Callable:
-    """
-    Wrap `fn` and performs view handling if copy is False.
+    """Wrap `fn` and performs view handling if copy is False.
 
     Used for functional backends (Jax and TensorFlow). Checks if the
     first arg is a view or original array by checking if the ._base
@@ -628,8 +621,7 @@ def handle_view(fn: Callable) -> Callable:
 
 
 def handle_view_indexing(fn: Callable) -> Callable:
-    """
-    Wrap `fn` and performs view handling specifically for indexing.
+    """Wrap `fn` and performs view handling specifically for indexing.
 
     As with NumPy it returns a copy if advanced indexing is performed.
     Used for functional backends (Jax and TensorFlow). Checks if the
@@ -672,8 +664,8 @@ def _convert_numpy_arrays_to_backend_specific(*args):
 
 
 def handle_numpy_arrays_in_specific_backend(fn: Callable) -> Callable:
-    """
-    Wrap `fn` and converts all `numpy.ndarray` inputs to `torch.Tensor` instances.
+    """Wrap `fn` and converts all `numpy.ndarray` inputs to `torch.Tensor`
+    instances.
 
     Used for functional backends (PyTorch). Converts all `numpy.ndarray`
     inputs to `torch.Tensor` instances.
@@ -696,9 +688,8 @@ def handle_numpy_arrays_in_specific_backend(fn: Callable) -> Callable:
 def infer_dtype(fn: Callable) -> Callable:
     @functools.wraps(fn)
     def _infer_dtype(*args, dtype=None, **kwargs):
-        """
-        Determine the correct `dtype`, and then calls the function with the `dtype`
-        passed explicitly.
+        """Determine the correct `dtype`, and then calls the function with the
+        `dtype` passed explicitly.
 
         Parameters
         ----------
@@ -734,8 +725,7 @@ def infer_dtype(fn: Callable) -> Callable:
 def handle_device(fn: Callable) -> Callable:
     @functools.wraps(fn)
     def _handle_device(*args, **kwargs):
-        """
-        Move all array inputs of the function to `ivy.default_device()`.
+        """Move all array inputs of the function to `ivy.default_device()`.
 
         Parameters
         ----------
@@ -789,9 +779,8 @@ def handle_out_argument(fn: Callable) -> Callable:
 
     @functools.wraps(fn)
     def _handle_out_argument(*args, out=None, **kwargs):
-        """
-        Call `fn` with the `out` argument handled correctly for performing an inplace
-        update.
+        """Call `fn` with the `out` argument handled correctly for performing
+        an inplace update.
 
         Parameters
         ----------
@@ -883,10 +872,9 @@ def handle_nestable(fn: Callable) -> Callable:
 
     @functools.wraps(fn)
     def _handle_nestable(*args, **kwargs):
-        """
-        Call `fn` with the *nestable* property of the function correctly handled. This
-        means mapping the function to the container leaves if any containers are passed
-        in the input.
+        """Call `fn` with the *nestable* property of the function correctly
+        handled. This means mapping the function to the container leaves if any
+        containers are passed in the input.
 
         Parameters
         ----------
@@ -927,10 +915,9 @@ def handle_nestable(fn: Callable) -> Callable:
 def handle_ragged(fn: Callable) -> Callable:
     @functools.wraps(fn)
     def _handle_ragged(*args, **kwargs):
-        """
-        Call `fn` with the *ragged* property of the function correctly handled. This
-        means mapping the function to the RaggedArray arrays if any RaggedArrays are
-        passed in the input.
+        """Call `fn` with the *ragged* property of the function correctly
+        handled. This means mapping the function to the RaggedArray arrays if
+        any RaggedArrays are passed in the input.
 
         Parameters
         ----------
@@ -988,8 +975,7 @@ def handle_partial_mixed_function(fn) -> Callable:
 def temp_asarray_wrapper(fn: Callable) -> Callable:
     @functools.wraps(fn)
     def _temp_asarray_wrapper(*args, **kwargs):
-        """
-        Convert `Tensor` into `ivy.Array` instances.
+        """Convert `Tensor` into `ivy.Array` instances.
 
         Convert all `Tensor` instances in both the positional and keyword arguments
         into `ivy.Array` instances, and then call the function with the updated
@@ -1016,18 +1002,40 @@ def temp_asarray_wrapper(fn: Callable) -> Callable:
     return _temp_asarray_wrapper
 
 
+# Download compiled cython wrapper wrapper
+
+
+def download_cython_wrapper_wrapper(fn: Callable) -> Callable:
+    @functools.wraps(fn)
+    def _download_cython_wrapper_wrapper(*args, **kwargs):
+        """Wrap the function to download compiled cython wrapper for the
+        function and re- wraps it with the downloaded wrapper.
+
+        Download the compiled cython wrapper by calling
+        ivy.wrappers.get_wrapper(func_name: str) and then wrap the
+        function with the downloaded wrapper.
+        """
+        ivy.wrappers.download_cython_wrapper(fn.__name__)
+        ivy.wrappers.load_one_wrapper(fn.__name__)
+        ivy.functional.__dict__[fn.__name__] = getattr(
+            ivy.wrappers, fn.__name__ + "_wrapper"
+        )(fn)
+        return ivy.functional.__dict__[fn.__name__](*args, **kwargs)
+
+    return _download_cython_wrapper_wrapper
+
+
 # Functions #
 
 
 def _wrap_function(
     key: str, to_wrap: Callable, original: Callable, compositional: bool = False
 ) -> Callable:
-    """
-    Apply wrapping to backend implementation `to_wrap` if the original implementation
-    `original` is also wrapped, and if `to_wrap` is not already wrapped. Attributes
-    `handle_nestable` etc are set during wrapping, hence indicate to us whether a
-    certain function has been wrapped or not. Also handles wrapping of the `linalg`
-    namespace.
+    """Apply wrapping to backend implementation `to_wrap` if the original
+    implementation `original` is also wrapped, and if `to_wrap` is not already
+    wrapped. Attributes `handle_nestable` etc are set during wrapping, hence
+    indicate to us whether a certain function has been wrapped or not. Also
+    handles wrapping of the `linalg` namespace.
 
     Parameters
     ----------
@@ -1061,6 +1069,12 @@ def _wrap_function(
                 )
         return to_wrap
     if isinstance(to_wrap, FunctionType):
+        if ivy.cython_wrappers_mode and ivy.wrappers.wrapper_exists(to_wrap.__name__):
+            if to_wrap.__name__ + "_wrapper" in ivy.wrappers.__all__:
+                to_wrap = getattr(ivy.wrappers, to_wrap.__name__ + "_wrapper")(to_wrap)
+                return to_wrap
+            else:
+                return download_cython_wrapper_wrapper(to_wrap)
         # set attributes
         for attr in original.__dict__.keys():
             # private attribute or decorator
@@ -1199,7 +1213,7 @@ def _dtype_from_version(dic, version):
 
     # If version dict is empty, then there is an error
     if not dic:
-        raise Exception("No version found in the dictionary")
+        raise ValueError("No version found in the dictionary")
 
     # If key is already in the dictionary, return the value
     if version in dic:
@@ -1228,8 +1242,8 @@ def _dtype_from_version(dic, version):
 
 def _versioned_attribute_factory(attribute_function, base):
     class VersionedAttributes(base):
-        """
-        Class which add versioned attributes to a class, inheriting from `base`.
+        """Class which add versioned attributes to a class, inheriting from
+        `base`.
 
         Create a class which inherits `base` this way if isinstance is
         called on an instance of the class, it will return True if
@@ -1258,8 +1272,7 @@ def _versioned_attribute_factory(attribute_function, base):
 
 
 def _dtype_device_wrapper_creator(attrib, t):
-    """
-    Create a wrapper for a dtype or device attribute.
+    """Create a wrapper for a dtype or device attribute.
 
     The wrapper returns the correct dtype or device for the current version of the
     backend.
@@ -1359,8 +1372,8 @@ def _nest_has_nans(x):
 def handle_nans(fn: Callable) -> Callable:
     @functools.wraps(fn)
     def _handle_nans(*args, **kwargs):
-        """
-        Check for the existence of nans in all arrays in the `args` and `kwargs`.
+        """Check for the existence of nans in all arrays in the `args` and
+        `kwargs`.
 
         The presence of nans is then handled depending on the enabled `nan_policy`.
 
@@ -1414,9 +1427,8 @@ def handle_complex_input(fn: Callable) -> Callable:
         complex_mode: Literal["split", "magnitude", "jax"] = "jax",
         **kwargs,
     ):
-        """
-        Check whether the first positional argument is an array of complex type, and if
-        so handle it according to the provided `complex_mode`.
+        """Check whether the first positional argument is an array of complex
+        type, and if so handle it according to the provided `complex_mode`.
 
         The options are:
         `"jax"` (default): emulate the behaviour of the JAX framework. If the function
@@ -1543,10 +1555,9 @@ def handle_complex_input(fn: Callable) -> Callable:
 def handle_backend_invalid(fn: Callable) -> Callable:
     @functools.wraps(fn)
     def _handle_backend_invalid(*args, **kwargs):
-        """
-        Check if any of the arguments (or nested arguments) passed to the function are
-        instances of ivy.Array or ivy.NativeArray. If so, it returns the function. If
-        not, it raises an InvalidBackendException.
+        """Check if any of the arguments (or nested arguments) passed to the
+        function are instances of ivy.Array or ivy.NativeArray. If so, it
+        returns the function. If not, it raises an InvalidBackendException.
 
         Parameters
         ----------
@@ -1647,14 +1658,16 @@ class with_unsupported_dtypes(contextlib.ContextDecorator):
             if globals_getter_func().get(item, None):
                 if isinstance(globals_getter_func()[item], FunctionType):
                     # we need to add the decorator
-                    globals_getter_func([
-                        item,
-                        (
-                            _dtype_device_wrapper_creator("unsupported_dtypes", tuple)(
-                                *self.args, **self.kwargs
-                            )
-                        )(globals_getter_func()[item]),
-                    ])
+                    globals_getter_func(
+                        [
+                            item,
+                            (
+                                _dtype_device_wrapper_creator(
+                                    "unsupported_dtypes", tuple
+                                )(*self.args, **self.kwargs)
+                            )(globals_getter_func()[item]),
+                        ]
+                    )
 
 
 class with_supported_dtypes(contextlib.ContextDecorator):
@@ -1681,14 +1694,16 @@ class with_supported_dtypes(contextlib.ContextDecorator):
             if globals_getter_func().get(item, None):
                 if isinstance(globals_getter_func()[item], FunctionType):
                     # we need to add the decorator
-                    globals_getter_func([
-                        item,
-                        (
-                            _dtype_device_wrapper_creator("supported_dtypes", tuple)(
-                                *self.args, **self.kwargs
-                            )
-                        )(globals_getter_func()[item]),
-                    ])
+                    globals_getter_func(
+                        [
+                            item,
+                            (
+                                _dtype_device_wrapper_creator(
+                                    "supported_dtypes", tuple
+                                )(*self.args, **self.kwargs)
+                            )(globals_getter_func()[item]),
+                        ]
+                    )
 
 
 class with_unsupported_devices(contextlib.ContextDecorator):
@@ -1715,14 +1730,16 @@ class with_unsupported_devices(contextlib.ContextDecorator):
             if globals_getter_func().get(item, None):
                 if isinstance(globals_getter_func()[item], FunctionType):
                     # we need to add the decorator
-                    globals_getter_func([
-                        item,
-                        (
-                            _dtype_device_wrapper_creator("unsupported_devices", tuple)(
-                                *self.args, **self.kwargs
-                            )
-                        )(globals_getter_func()[item]),
-                    ])
+                    globals_getter_func(
+                        [
+                            item,
+                            (
+                                _dtype_device_wrapper_creator(
+                                    "unsupported_devices", tuple
+                                )(*self.args, **self.kwargs)
+                            )(globals_getter_func()[item]),
+                        ]
+                    )
 
 
 class with_supported_devices(contextlib.ContextDecorator):
@@ -1749,14 +1766,16 @@ class with_supported_devices(contextlib.ContextDecorator):
             if globals_getter_func().get(item, None):
                 if isinstance(globals_getter_func()[item], FunctionType):
                     # we need to add the decorator
-                    globals_getter_func([
-                        item,
-                        (
-                            _dtype_device_wrapper_creator("supported_devices", tuple)(
-                                *self.args, **self.kwargs
-                            )
-                        )(globals_getter_func()[item]),
-                    ])
+                    globals_getter_func(
+                        [
+                            item,
+                            (
+                                _dtype_device_wrapper_creator(
+                                    "supported_devices", tuple
+                                )(*self.args, **self.kwargs)
+                            )(globals_getter_func()[item]),
+                        ]
+                    )
 
 
 class with_unsupported_device_and_dtypes(contextlib.ContextDecorator):
@@ -1805,14 +1824,16 @@ class with_unsupported_device_and_dtypes(contextlib.ContextDecorator):
             if globals_getter_func().get(item, None):
                 if isinstance(globals_getter_func()[item], FunctionType):
                     # we need to add the decorator
-                    globals_getter_func([
-                        item,
-                        (
-                            _dtype_device_wrapper_creator(
-                                "unsupported_device_and_dtype", tuple
-                            )(*self.args, **self.kwargs)
-                        )(globals_getter_func()[item]),
-                    ])
+                    globals_getter_func(
+                        [
+                            item,
+                            (
+                                _dtype_device_wrapper_creator(
+                                    "unsupported_device_and_dtype", tuple
+                                )(*self.args, **self.kwargs)
+                            )(globals_getter_func()[item]),
+                        ]
+                    )
 
 
 class with_supported_device_and_dtypes(contextlib.ContextDecorator):
@@ -1861,14 +1882,16 @@ class with_supported_device_and_dtypes(contextlib.ContextDecorator):
             if globals_getter_func().get(item, None):
                 if isinstance(globals_getter_func()[item], FunctionType):
                     # we need to add the decorator
-                    globals_getter_func([
-                        item,
-                        (
-                            _dtype_device_wrapper_creator(
-                                "supported_device_and_dtype", tuple
-                            )(*self.args, **self.kwargs)
-                        )(globals_getter_func()[item]),
-                    ])
+                    globals_getter_func(
+                        [
+                            item,
+                            (
+                                _dtype_device_wrapper_creator(
+                                    "supported_device_and_dtype", tuple
+                                )(*self.args, **self.kwargs)
+                            )(globals_getter_func()[item]),
+                        ]
+                    )
 
 
 class override(contextlib.ContextDecorator):

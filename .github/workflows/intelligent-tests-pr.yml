@@ -2,7 +2,7 @@ name: intelligent-tests-pr
 on:
   workflow_dispatch:
   pull_request:
-    types: [labeled, opened, synchronize, reopened, review_requested]
+    types: [opened, synchronize, reopened, review_requested]
 
 permissions:
   actions: read
@@ -81,7 +81,7 @@ jobs:
       - name: Install ivy and fetch binaries
         run: |
           cd ivy
-          pip3 install -e .
+          sudo pip3 install -e .
           mkdir .ivy
           touch .ivy/key.pem
           echo -n ${{ secrets.USER_API_KEY }} > .ivy/key.pem
